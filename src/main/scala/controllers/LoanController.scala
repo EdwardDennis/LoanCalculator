@@ -17,7 +17,7 @@ class LoanController {
     val baseInterestRate = getBaseInterestRate
     val margin = getMargin
     val loan = Loan(startDate, endDate, amount, currency.getCurrencyCode, baseInterestRate, margin)
-    println(s"Loan successfully created")
+    println(s"Loan successfully created: ${loan.toString}")
   }
 
   @tailrec
