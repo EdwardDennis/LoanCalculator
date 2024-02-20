@@ -39,13 +39,13 @@ class LoanControllerSpec extends AnyWordSpec with BeforeAndAfterEach with Mockit
 
       for (command <- validCommands) {
         when(printStream.println(any[String])).thenAnswer(_ => ())
-        when(bufferedReader.readLine()).thenReturn(command, "2022-12-01", "2023-12-01", "2000", "USD", "3.5", "1.0") // Additional responses for the loan calculation
+        when(bufferedReader.readLine()).thenReturn(command, "2022-12-01", "2023-12-01", "2000", "USD", "3.5", "1.0")
 
         loanController.askUserForAction()
 
         verify(printStream).println("Available commands: ")
-        verify(printStream).println("- 'c' ,'calc', or 'calculate': perform a new loan calculation.")
-        verify(bufferedReader, times(7)).readLine() // Change to 7 due to the additional readLine() calls
+        verify(printStream).println("- 'c', 'calc', or 'calculate': perform a new loan calculation.")
+        verify(bufferedReader, times(7)).readLine()
         reset(printStream, bufferedReader)
       }
     }

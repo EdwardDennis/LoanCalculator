@@ -17,13 +17,15 @@ class LoanController(in: BufferedReader = new BufferedReader(new InputStreamRead
   @tailrec
   final def askUserForAction(): Unit = {
     out.println("Available commands: ")
-    out.println("- 'c' ,'calc', or 'calculate': perform a new loan calculation.")
+    out.println("- 'c', 'calc', or 'calculate': perform a new loan calculation.")
+    out.println("- 'x', or 'exit': close the application.")
     out.print("What do you want to do next? ")
 
     val input = in.readLine().toLowerCase().trim
 
     input match {
       case "c" | "calc" | "calculate" => handleNewLoan()
+      case "x" | "exit" => System.exit(0)
       case _ =>
         out.println("Unsupported action. Please try again.")
         askUserForAction()
