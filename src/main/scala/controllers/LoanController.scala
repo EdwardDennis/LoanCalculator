@@ -7,8 +7,10 @@ import java.util.Currency
 import scala.annotation.tailrec
 import scala.io.StdIn.readLine
 import scala.util.{Failure, Success, Try}
+import java.io.{BufferedReader, InputStreamReader, PrintStream}
 
-class LoanController {
+class LoanController(in: BufferedReader = new BufferedReader(new InputStreamReader(System.in)),
+                     out: PrintStream = System.out) {
   def createLoan(): Unit = {
     val startDate = getStartDate
     val endDate = getEndDate
@@ -20,77 +22,28 @@ class LoanController {
     println(s"Loan successfully created: ${loan.toString}")
   }
 
-  @tailrec
-  private final def getStartDate: LocalDate = {
-    println("Please enter the loan start date (format: yyyy-mm-dd): ")
-    val startDate = readLine()
-    Try(LocalDate.parse(startDate)) match {
-      case Success(startDate) => startDate
-      case Failure(exception) =>
-        println("Invalid date format. Please try again.")
-        getStartDate
-    }
-  }
+  private final def getStartDate: LocalDate = readWithRetry("Please enter the loan start date (format: yyyy-mm-dd): ", "Invalid start date format. Please try again.", LocalDate.parse)
+
+  private final def getEndDate: LocalDate = readWithRetry("Please enter the loan end date (format: yyyy-mm-dd): ", "Invalid end date format. Please try again.", LocalDate.parse)
+
+  private final def getAmount: BigDecimal = readWithRetry("Loan amount: ", "Invalid amount. Please try again.", BigDecimal(_))
+
+  private final def getCurrency: Currency = readWithRetry("Currency: ", "Invalid currency code. Please try again.", Currency.getInstance)
+
+  private final def getBaseInterestRate: BigDecimal = readWithRetry("Base Interest Rate: ", "Invalid base interest amount. Please enter a valid number.", BigDecimal(_))
+
+  private final def getMargin: BigDecimal = readWithRetry("Margin: ", "Invalid margin. Please enter a valid number.", BigDecimal(_))
 
   @tailrec
-  private final def getEndDate: LocalDate = {
-    println("Please enter the loan end date (format: yyyy-mm-dd): ")
-    val endDate = readLine()
-    Try(LocalDate.parse(endDate)) match {
-      case Success(endDate) => endDate
-      case Failure(exception) =>
-        println("Invalid date format. Please try again.")
-        getEndDate
-    }
-  }
+  private def readWithRetry[T](prompt: String, errorMsg: String, parseFn: String => T): T = {
+    out.print(prompt)
+    val input = in.readLine().trim
 
-  @tailrec
-  private final def getAmount: BigDecimal = {
-    println("Loan amount: ")
-    val amount = readLine()
-    Try(BigDecimal(amount)) match {
-      case Success(amount) => amount
-      case Failure(exception) =>
-        println("Invalid amount. Please try again.")
-        getAmount
-    }
-  }
-
-  @tailrec
-  private final def getCurrency: Currency = {
-    println("Currency: ")
-    val currency = readLine().toUpperCase
-    Try(Currency.getInstance(currency)) match {
-      case Success(currency) => currency
-      case Failure(exception) =>
-        println("Invalid currency code. Please try again.")
-        getCurrency
-    }
-  }
-
-  @tailrec
-  private final def getBaseInterestRate: BigDecimal = {
-    println("Base Interest Rate: ")
-    val baseInterestRate = readLine()
-
-    Try(BigDecimal(baseInterestRate)) match {
-      case Success(baseInterestRate) => baseInterestRate
-      case Failure(exception) =>
-        println("Invalid base interest amount. Please enter a valid number.")
-        getBaseInterestRate
-    }
-  }
-
-  @tailrec
-  private final def getMargin: BigDecimal = {
-    println("Margin: ")
-    val margin = readLine()
-
-    Try(BigDecimal(margin)) match {
-      case Success(margin) => margin
-      case Failure(exception) =>
-        println("Invalid margin. Please enter a valid number.")
-        getMargin
+    Try(parseFn(input)) match {
+      case Success(value) => value
+      case Failure(_) =>
+        out.println(errorMsg)
+        readWithRetry(prompt, errorMsg, parseFn)
     }
   }
 }
