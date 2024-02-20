@@ -11,6 +11,6 @@ import controllers.LoanController
 @main
 def main(): Unit = {
   val loanController = new LoanController()
-  loanController.createLoan()
+  loanController.askUserForAction()
 }
 

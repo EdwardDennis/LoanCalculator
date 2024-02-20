@@ -2,69 +2,94 @@ package controllers
 
 import models.loan.Loan
 
+import java.io.{BufferedReader, InputStreamReader, PrintStream}
+import java.lang.IllegalArgumentException
 import java.time.LocalDate
 import java.util.Currency
 import scala.annotation.tailrec
+import scala.concurrent.Future
 import scala.io.StdIn.readLine
 import scala.util.{Failure, Success, Try}
-import java.io.{BufferedReader, InputStreamReader, PrintStream}
 
 class LoanController(in: BufferedReader = new BufferedReader(new InputStreamReader(System.in)),
                      out: PrintStream = System.out) {
-  def createLoan(): Unit = {
-    val startDate = getStartDate
-    val endDate = getEndDate(startDate)
-    val amount = getAmount
-    val currency = getCurrency
-    val baseInterestRate = getBaseInterestRate
-    val margin = getMargin
-    val loan = Loan(startDate, endDate, amount, currency.getCurrencyCode, baseInterestRate, margin)
-    println(s"Loan successfully created: ${loan.toString}")
-  }
 
-  private final def getStartDate: LocalDate = {
-    readWithRetry("Please enter the loan start date (format: yyyy-mm-dd): ", "Invalid start date format. Please try again.", str => Try(LocalDate.parse(str)).toEither)
-  }
-  private final def getEndDate(startDate: LocalDate): LocalDate = {
-    val prompt = "Please enter the loan end date (format: yyyy-mm-dd): "
-    val parseErrorMsg = "Invalid end date format. Please try again."
-    val comparisonErrorMsg = "End date must be after the start date. Please try again."
+  @tailrec
+  final def askUserForAction(): Unit = {
+    out.println("Available commands: ")
+    out.println("- 'c' ,'calc', or 'calculate': perform a new loan calculation.")
+    out.print("What do you want to do next? ")
 
-    val parsedDate = readWithRetry(prompt, parseErrorMsg, str => Try(LocalDate.parse(str)).toEither)
+    val input = in.readLine().toLowerCase().trim
 
-    if (parsedDate.isAfter(startDate)) parsedDate
-    else {
-      out.println(comparisonErrorMsg)
-      readWithRetry("Please enter the loan start date (format: yyyy-mm-dd): ", comparisonErrorMsg, str => Try(LocalDate.parse(str)).toEither)
+    input match {
+      case "c" | "calc" | "calculate" => handleNewLoan()
+      case _ =>
+        out.println("Unsupported action. Please try again.")
+        askUserForAction()
     }
   }
 
-  private final def getAmount: BigDecimal = {
-    readWithRetry("Loan amount: ", "Invalid amount. Please try again.", str => Try(BigDecimal(str)).toEither)
+
+  private final def handleNewLoan(): Unit = {
+    val maybeLoan = getLoanDetailsFromUser
+    maybeLoan match {
+      case Right(loan) => println(s"Loan successfully created: $loan")
+      case Left(ex) =>
+        println(ex.getMessage)
+        askUserForAction()
+    }
   }
 
-  private final def getCurrency: Currency = {
-    readWithRetry("Currency: ", "Invalid currency code. Please try again.", str => Try(Currency.getInstance(str)).toEither)
+  private final def getLoanDetailsFromUser: Either[Throwable, Loan] = {
+    getStartDate match {
+      case Right(startDate) =>
+        for {
+          endDate <- getEndDate(startDate)
+          amount <- getAmount
+          currency <- getCurrency
+          baseInterestRate <- getBaseInterestRate
+          margin <- getMargin
+        } yield Loan(startDate, endDate, amount, currency.getCurrencyCode, baseInterestRate, margin)
+      case Left(ex) => Left(ex)
+    }
   }
 
-  private final def getBaseInterestRate: BigDecimal = {
-    readWithRetry("Base Interest Rate: ", "Invalid base interest amount. Please enter a valid number.", str => Try(BigDecimal(str)).toEither)
+  private final def getStartDate: Either[Throwable, LocalDate] = {
+    getUserInput("Please enter the loan start date (format: yyyy-mm-dd): ", "Invalid start date format. Please try again.", str => Try(LocalDate.parse(str)).toEither)
   }
 
-  private final def getMargin: BigDecimal = {
-    readWithRetry("Margin: ", "Invalid margin. Please enter a valid number.", str => Try(BigDecimal(str)).toEither)
+  private final def getEndDate(startDate: LocalDate): Either[Throwable, LocalDate] = {
+    val userInput = getUserInput("Please enter the loan end date (format: yyyy-mm-dd): ", "Invalid end date format. Please try again.", str => Try(LocalDate.parse(str)).toEither)
+    userInput match {
+      case Right(endDate) if endDate.isAfter(startDate) => Right(endDate)
+      case _ => Left(new IllegalArgumentException("End date must be after the start date."))
+    }
   }
 
-  @tailrec
-  private def readWithRetry[T](prompt: String, errorMsg: String, validateFn: String => Either[Throwable, T]): T = {
+  private final def getAmount: Either[Throwable, BigDecimal] = {
+    getUserInput("Loan amount: ", "Invalid amount. Please try again.", str => Try(BigDecimal(str)).toEither)
+  }
+
+  private final def getCurrency: Either[Throwable, Currency] = {
+    getUserInput("Currency: ", "Invalid currency code. Please try again.", str => Try(Currency.getInstance(str)).toEither)
+  }
+
+  private final def getBaseInterestRate: Either[Throwable, BigDecimal] = {
+    getUserInput("Base Interest Rate: ", "Invalid base interest amount. Please enter a valid number.", str => Try(BigDecimal(str)).toEither)
+  }
+
+  private final def getMargin: Either[Throwable, BigDecimal] = {
+    getUserInput("Margin: ", "Invalid margin. Please enter a valid number.", str => Try(BigDecimal(str)).toEither)
+  }
+
+  private def getUserInput[T](prompt: String, errorMsg: String, validateFn: String => Either[Throwable, T]): Either[Throwable, T] = {
     out.print(prompt)
-    val input = in.readLine().trim
+    val input = in.readLine().toUpperCase.trim
 
     validateFn(input) match {
-      case Right(value) => value
-      case Left(_) =>
-        out.println(errorMsg)
-        readWithRetry(prompt, errorMsg, validateFn)
+      case result@Right(_) => result
+      case Left(_) => Left(IllegalArgumentException(errorMsg))
     }
   }
 }
