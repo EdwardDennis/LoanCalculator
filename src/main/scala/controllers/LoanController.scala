@@ -52,7 +52,7 @@ class LoanController(in: BufferedReader = new BufferedReader(new InputStreamRead
           currency <- getCurrency
           baseInterestRate <- getBaseInterestRate
           margin <- getMargin
-        } yield Loan(startDate, endDate, amount, currency.getCurrencyCode, baseInterestRate, margin)
+        } yield Loan.fromUserInput(startDate, endDate, amount, currency.getCurrencyCode, baseInterestRate, margin)
       case Left(ex) => Left(ex)
     }
   }
