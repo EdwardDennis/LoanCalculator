@@ -52,18 +52,32 @@ class LoanControllerSpec extends AnyWordSpec with BeforeAndAfterEach with Mockit
     "process valid date input" in {
       when(bufferedReader.readLine()).thenReturn("2023-12-01")
 
-      val endDate = loanController invokePrivate getEndDate()
+      val startDate = LocalDate.parse("2022-12-01")
+      val endDate = loanController invokePrivate getEndDate(startDate)
 
       assert(endDate.toString == "2023-12-01")
     }
+
     "not process invalid date format" in {
       when(bufferedReader.readLine())
         .thenReturn("notadate")
         .thenReturn("2023-12-01")
 
-      loanController.invokePrivate(getEndDate())
+      val startDate = LocalDate.parse("2022-12-01")
+      loanController invokePrivate getEndDate(startDate)
 
       verify(printStream).println("Invalid end date format. Please try again.")
+    }
+
+    "not process date earlier than start date" in {
+      when(bufferedReader.readLine())
+        .thenReturn("2021-12-01")
+        .thenReturn("2023-12-01")
+
+      val startDate = LocalDate.parse("2022-12-01")
+      loanController invokePrivate getEndDate(startDate)
+
+      verify(printStream).println("End date must be after the start date. Please try again.")
     }
   }
 

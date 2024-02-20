@@ -13,7 +13,7 @@ class LoanController(in: BufferedReader = new BufferedReader(new InputStreamRead
                      out: PrintStream = System.out) {
   def createLoan(): Unit = {
     val startDate = getStartDate
-    val endDate = getEndDate
+    val endDate = getEndDate(startDate)
     val amount = getAmount
     val currency = getCurrency
     val baseInterestRate = getBaseInterestRate
@@ -22,28 +22,49 @@ class LoanController(in: BufferedReader = new BufferedReader(new InputStreamRead
     println(s"Loan successfully created: ${loan.toString}")
   }
 
-  private final def getStartDate: LocalDate = readWithRetry("Please enter the loan start date (format: yyyy-mm-dd): ", "Invalid start date format. Please try again.", LocalDate.parse)
+  private final def getStartDate: LocalDate = {
+    readWithRetry("Please enter the loan start date (format: yyyy-mm-dd): ", "Invalid start date format. Please try again.", str => Try(LocalDate.parse(str)).toEither)
+  }
+  private final def getEndDate(startDate: LocalDate): LocalDate = {
+    val prompt = "Please enter the loan end date (format: yyyy-mm-dd): "
+    val parseErrorMsg = "Invalid end date format. Please try again."
+    val comparisonErrorMsg = "End date must be after the start date. Please try again."
 
-  private final def getEndDate: LocalDate = readWithRetry("Please enter the loan end date (format: yyyy-mm-dd): ", "Invalid end date format. Please try again.", LocalDate.parse)
+    val parsedDate = readWithRetry(prompt, parseErrorMsg, str => Try(LocalDate.parse(str)).toEither)
 
-  private final def getAmount: BigDecimal = readWithRetry("Loan amount: ", "Invalid amount. Please try again.", BigDecimal(_))
+    if (parsedDate.isAfter(startDate)) parsedDate
+    else {
+      out.println(comparisonErrorMsg)
+      readWithRetry("Please enter the loan start date (format: yyyy-mm-dd): ", comparisonErrorMsg, str => Try(LocalDate.parse(str)).toEither)
+    }
+  }
 
-  private final def getCurrency: Currency = readWithRetry("Currency: ", "Invalid currency code. Please try again.", Currency.getInstance)
+  private final def getAmount: BigDecimal = {
+    readWithRetry("Loan amount: ", "Invalid amount. Please try again.", str => Try(BigDecimal(str)).toEither)
+  }
 
-  private final def getBaseInterestRate: BigDecimal = readWithRetry("Base Interest Rate: ", "Invalid base interest amount. Please enter a valid number.", BigDecimal(_))
+  private final def getCurrency: Currency = {
+    readWithRetry("Currency: ", "Invalid currency code. Please try again.", str => Try(Currency.getInstance(str)).toEither)
+  }
 
-  private final def getMargin: BigDecimal = readWithRetry("Margin: ", "Invalid margin. Please enter a valid number.", BigDecimal(_))
+  private final def getBaseInterestRate: BigDecimal = {
+    readWithRetry("Base Interest Rate: ", "Invalid base interest amount. Please enter a valid number.", str => Try(BigDecimal(str)).toEither)
+  }
+
+  private final def getMargin: BigDecimal = {
+    readWithRetry("Margin: ", "Invalid margin. Please enter a valid number.", str => Try(BigDecimal(str)).toEither)
+  }
 
   @tailrec
-  private def readWithRetry[T](prompt: String, errorMsg: String, parseFn: String => T): T = {
+  private def readWithRetry[T](prompt: String, errorMsg: String, validateFn: String => Either[Throwable, T]): T = {
     out.print(prompt)
     val input = in.readLine().trim
 
-    Try(parseFn(input)) match {
-      case Success(value) => value
-      case Failure(_) =>
+    validateFn(input) match {
+      case Right(value) => value
+      case Left(_) =>
         out.println(errorMsg)
-        readWithRetry(prompt, errorMsg, parseFn)
+        readWithRetry(prompt, errorMsg, validateFn)
     }
   }
 }
