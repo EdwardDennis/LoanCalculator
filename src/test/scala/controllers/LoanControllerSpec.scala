@@ -1,5 +1,6 @@
 package controllers
 
+import models.loan.Loan
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.*
 import org.scalatest.BeforeAndAfterEach
@@ -7,6 +8,7 @@ import org.scalatest.PrivateMethodTester.*
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.mockito.MockitoSugar
+import services.DataServiceImpl
 
 import java.io.{BufferedReader, PrintStream}
 import java.time.LocalDate
@@ -23,11 +25,12 @@ class LoanControllerSpec extends AnyWordSpec with BeforeAndAfterEach with Mockit
 
   private val bufferedReader: BufferedReader = mock[BufferedReader]
   private val printStream: PrintStream = mock[PrintStream]
-  private val loanController: LoanController = new LoanController(bufferedReader, printStream)
+  private val loanService = mock[DataServiceImpl[Loan]]
+  private val loanController: LoanController = new LoanController(bufferedReader, printStream, loanService)
 
   override def beforeEach(): Unit = {
     super.beforeEach()
-    reset(bufferedReader, printStream)
+    reset(bufferedReader, printStream, loanService)
   }
 
   val startDate: LocalDate = LocalDate.parse("2022-12-01")

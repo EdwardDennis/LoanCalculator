@@ -1,16 +1,16 @@
+import controllers.LoanController
 import models.loan.Loan
+import services.DataServiceImpl
 
+import java.io.{BufferedReader, InputStreamReader}
 import java.time.LocalDate
 import java.util.Currency
 import scala.annotation.tailrec
 import scala.io.StdIn.readLine
-import scala.util.{Failure, Success, Try}
-import controllers.LoanController
-
 
 @main
 def main(): Unit = {
-  val loanController = new LoanController()
+  val loanService = new DataServiceImpl[Loan]
+  val loanController = new LoanController(new BufferedReader(new InputStreamReader(System.in)), System.out, loanService)
   loanController.askUserForAction()
 }
-

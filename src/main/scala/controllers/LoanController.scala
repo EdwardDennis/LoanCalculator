@@ -1,6 +1,7 @@
 package controllers
 
 import models.loan.Loan
+import services.DataServiceImpl
 
 import java.io.{BufferedReader, InputStreamReader, PrintStream}
 import java.lang.IllegalArgumentException
@@ -12,7 +13,8 @@ import scala.io.StdIn.readLine
 import scala.util.Try
 
 class LoanController(in: BufferedReader = new BufferedReader(new InputStreamReader(System.in)),
-                     out: PrintStream = System.out) {
+                     out: PrintStream = System.out,
+                     loanService: DataServiceImpl[Loan]) {
 
   @tailrec
   final def askUserForAction(): Unit = {
@@ -36,7 +38,8 @@ class LoanController(in: BufferedReader = new BufferedReader(new InputStreamRead
   private final def handleNewLoan(): Unit = {
     val maybeLoan = getLoanDetailsFromUser
     maybeLoan match {
-      case Right(loan) => println(s"Loan successfully created: $loan")
+      case Right(loan) => 
+        println(s"Loan successfully created: $loan")
       case Left(ex) =>
         println(ex.getMessage)
         askUserForAction()
