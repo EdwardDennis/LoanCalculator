@@ -34,11 +34,10 @@ class LoanController(in: BufferedReader = new BufferedReader(new InputStreamRead
     }
   }
 
-
   private final def handleNewLoan(): Unit = {
     val maybeLoan = getLoanDetailsFromUser
     maybeLoan match {
-      case Right(loan) => 
+      case Right(loan) =>
         println(s"Loan successfully created: $loan")
       case Left(ex) =>
         println(ex.getMessage)
