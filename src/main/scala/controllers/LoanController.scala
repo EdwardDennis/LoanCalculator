@@ -38,7 +38,9 @@ class LoanController(in: BufferedReader = new BufferedReader(new InputStreamRead
     val maybeLoan = getLoanDetailsFromUser
     maybeLoan match {
       case Right(loan) =>
-        println(s"Loan successfully created: $loan")
+        loan.toString
+        loanService.add(loan)
+        askUserForAction()
       case Left(ex) =>
         println(ex.getMessage)
         askUserForAction()
