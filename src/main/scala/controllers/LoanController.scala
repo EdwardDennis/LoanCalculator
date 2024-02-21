@@ -1,7 +1,7 @@
 package controllers
 
 import models.loan.Loan
-import services.DataServiceImpl
+import services.LoanService
 
 import java.io.{BufferedReader, InputStreamReader, PrintStream}
 import java.lang.IllegalArgumentException
@@ -14,7 +14,7 @@ import scala.util.Try
 
 class LoanController(in: BufferedReader = new BufferedReader(new InputStreamReader(System.in)),
                      out: PrintStream = System.out,
-                     loanService: DataServiceImpl[Loan]) {
+                     loanService: LoanService) {
 
   @tailrec
   final def askUserForAction(): Unit = {
