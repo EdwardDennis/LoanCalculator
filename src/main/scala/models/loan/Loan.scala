@@ -9,6 +9,7 @@ case class Loan(startDate: LocalDate, endDate: LocalDate, amount: BigDecimal,
   def daysElapsedSinceStartDate(): Int = DAYS.between(startDate, endDate.plusDays(1)).toInt
 
   def dailyInterestWithMargin(): BigDecimal = amount * ((baseInterestRate + margin) / 100) / 365
+
   def dailyInterestWithoutMargin(): BigDecimal = amount * (baseInterestRate / 100) / 365
 
   def totalInterestRate: BigDecimal = baseInterestRate + margin
@@ -22,7 +23,23 @@ case class Loan(startDate: LocalDate, endDate: LocalDate, amount: BigDecimal,
   }
 
   override def toString: String = {
-    s"Start Date: $startDate, End Date: $endDate, Amount: $amount $currency, Base Interest Rate: $baseInterestRate%, Margin: $margin%"
+    val dailyData = for {
+      day <- 0 until DAYS.between(startDate, endDate.plusDays(1)).toInt
+    } yield {
+      val currentDate = startDate.plusDays(day)
+      val elapsedDays = day + 1
+      val interestWithoutMargin = dailyInterestWithoutMargin().setScale(2, BigDecimal.RoundingMode.HALF_EVEN)
+      val interestWithMargin = dailyInterestWithMargin().setScale(2, BigDecimal.RoundingMode.HALF_EVEN)
+      f"Day: $currentDate, Elapsed Days: $elapsedDays, Daily Interest (Without Margin): $interestWithoutMargin $currency, Daily Interest (With Margin): $interestWithMargin $currency"
+    }
+    val totalInterest = totalInterestWithMargin().setScale(2, BigDecimal.RoundingMode.HALF_EVEN)
+    s"""
+       |Accrual Start Date: $startDate
+       |-------------------------
+       |${dailyData.mkString("\n")}
+       |-------------------------
+       |Total Interest With Margin: $totalInterest
+ """.stripMargin
   }
 }
 
