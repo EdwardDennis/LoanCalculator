@@ -3,29 +3,22 @@ package models.loan
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit.DAYS
 
-case class DailyInterest(accrualDate: LocalDate, interestWithoutMargin: BigDecimal, interestWithMargin: BigDecimal, numberOfDaysSinceStart: Long)
-
 case class Loan(startDate: LocalDate, endDate: LocalDate, amount: BigDecimal,
                 currency: String, baseInterestRate: BigDecimal, margin: BigDecimal) {
 
-  private def calculateDailyInterest(): List[DailyInterest] = {
-    val totalDays = DAYS.between(startDate, endDate).toInt
-    (0 to totalDays).toList.map { i =>
-      val accrualDate = startDate.plusDays(i)
-      val interestWithoutMargin = amount * (baseInterestRate / 100) / 365
-      val interestWithMargin = amount * ((baseInterestRate + margin) / 100) / 365
-      DailyInterest(accrualDate, interestWithoutMargin, interestWithMargin, i)
-    }
-  }
+  def daysElapsedSinceStartDate(): Int = DAYS.between(startDate, endDate.plusDays(1)).toInt
+
+  def dailyInterestWithMargin(): BigDecimal = amount * ((baseInterestRate + margin) / 100) / 365
+  def dailyInterestWithoutMargin(): BigDecimal = amount * (baseInterestRate / 100) / 365
 
   def totalInterestRate: BigDecimal = baseInterestRate + margin
 
   def totalInterestWithMargin(): BigDecimal = {
-    calculateDailyInterest().map(_.interestWithMargin).sum
+    daysElapsedSinceStartDate() * dailyInterestWithMargin()
   }
 
   def totalInterestWithoutMargin(): BigDecimal = {
-    calculateDailyInterest().map(_.interestWithoutMargin).sum
+    daysElapsedSinceStartDate() * dailyInterestWithoutMargin()
   }
 
   override def toString: String = {
