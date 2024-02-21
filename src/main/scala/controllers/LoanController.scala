@@ -20,6 +20,7 @@ class LoanController(in: BufferedReader = new BufferedReader(new InputStreamRead
   final def askUserForAction(): Unit = {
     out.println("Available commands: ")
     out.println("- 'c', 'calc', or 'calculate': perform a new loan calculation.")
+    out.println("- 'v', or 'view': view previous calculations.")
     out.println("- 'x', or 'exit': close the application.")
     out.print("What do you want to do next? ")
 
@@ -27,6 +28,7 @@ class LoanController(in: BufferedReader = new BufferedReader(new InputStreamRead
 
     input match {
       case "c" | "calc" | "calculate" => handleNewLoan()
+      case "v" | "view" => handleView()
       case "x" | "exit" => System.exit(0)
       case _ =>
         out.println("Unsupported action. Please try again.")
@@ -96,6 +98,33 @@ class LoanController(in: BufferedReader = new BufferedReader(new InputStreamRead
     validateFn(input) match {
       case result@Right(_) => result
       case Left(_) => Left(IllegalArgumentException(errorMsg))
+    }
+  }
+
+  private def handleView(): Unit = {
+    loanService.getAllLoans match {
+      case Nil =>
+        println("No previous calculations available.")
+        askUserForAction()
+      case loans =>
+        loans.foreach(loan => println(loanService.loanToString(loan._1, loan._2)))
+        println("Press 'e' to edit a previous loan, or 'b' to go back.")
+
+        in.readLine().toLowerCase().trim match {
+          case "b" => askUserForAction()
+          case "e" => editLoan()
+          case _ => println("Unsupported action. Please try again.")
+        }
+    }
+  }
+
+  private def editLoan(): Unit = {
+    getUserInput("Enter the loan ID you want to edit: ", "Invalid selection. Please enter a valid ID.", str => Try(str.toInt).toEither) match {
+      case Right(id) => getLoanDetailsFromUser match {
+        case Right(editedLoan) if loanService.edit(id, editedLoan) => askUserForAction()
+        case _ => println("Something went wrong.")
+      }
+      case _ => println("Invalid ID.")
     }
   }
 }

@@ -11,13 +11,13 @@ class LoanService(dataServiceImpl: DataServiceImpl[Loan]) {
     dataServiceImpl.add(loan)
   }
 
-  def getAllLoans: List[String] = {
-    dataServiceImpl.getAll.map { case (id, loan) =>
-      loanToString(id, loan)
-    }
+  def edit(id: Int, loan: Loan): Boolean = {
+    dataServiceImpl.edit(id, loan)
   }
 
-  private def loanToString(id: Int, loan: Loan): String = {
+  def getAllLoans: List[(Int, Loan)] = dataServiceImpl.getAll
+  
+  def loanToString(id: Int, loan: Loan): String = {
     s"""
        |ID: $id
      """.stripMargin
