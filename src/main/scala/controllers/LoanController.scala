@@ -9,7 +9,7 @@ import java.util.Currency
 import scala.annotation.tailrec
 import scala.concurrent.Future
 import scala.io.StdIn.readLine
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 class LoanController(in: BufferedReader = new BufferedReader(new InputStreamReader(System.in)),
                      out: PrintStream = System.out) {
@@ -74,7 +74,7 @@ class LoanController(in: BufferedReader = new BufferedReader(new InputStreamRead
   }
 
   private final def getCurrency: Either[Throwable, Currency] = {
-    getUserInput("Currency: ", "Invalid currency code. Please try again.", str => Try(Currency.getInstance(str)).toEither)
+    getUserInput("Currency: ", "Invalid currency code. Please try again.", str => Try(Currency.getInstance(str.toUpperCase)).toEither)
   }
 
   private final def getBaseInterestRate: Either[Throwable, BigDecimal] = {
@@ -87,7 +87,7 @@ class LoanController(in: BufferedReader = new BufferedReader(new InputStreamRead
 
   private def getUserInput[T](prompt: String, errorMsg: String, validateFn: String => Either[Throwable, T]): Either[Throwable, T] = {
     out.print(prompt)
-    val input = in.readLine().toUpperCase.trim
+    val input = in.readLine().trim
 
     validateFn(input) match {
       case result@Right(_) => result
