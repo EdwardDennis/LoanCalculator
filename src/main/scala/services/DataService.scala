@@ -22,5 +22,14 @@ final class DataServiceImpl[T] extends DataService[T] {
     store.addOne(nextId -> t)
   }
 
+  def edit(id: Int, t: T): Boolean = {
+    if(store.contains(id)) {
+      store(id) = t
+      true
+    } else {
+      false
+    }
+  }
+
   override def getAll: List[(Int, T)] = store.toList
 }
