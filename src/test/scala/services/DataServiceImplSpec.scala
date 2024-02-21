@@ -12,7 +12,7 @@ class DataServiceImplSpec extends AnyWordSpec with Matchers {
         val dataService = new DataServiceImpl[Int]
         dataService.add(1)
         dataService.add(2)
-        dataService.getAll should equal (List(1, 2))
+        dataService.getAll should equal(List(0 -> 1, 1 -> 2))
       }
     }
 
@@ -21,7 +21,7 @@ class DataServiceImplSpec extends AnyWordSpec with Matchers {
         val dataService = new DataServiceImpl[String]
         dataService.add("first")
         dataService.add("second")
-        dataService.getAll should equal (List("first", "second"))
+        dataService.getAll should equal(List(0 -> "first", 1 -> "second"))
       }
 
       "return an empty list when no elements are in the store" in {
