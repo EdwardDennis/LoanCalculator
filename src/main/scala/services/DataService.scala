@@ -23,11 +23,12 @@ final class DataServiceImpl[T] extends DataService[T] {
   }
 
   def edit(id: Int, t: T): Boolean = {
-    if(store.contains(id)) {
-      store(id) = t
-      true
-    } else {
-      false
+    store.get(id) match {
+      case Some(loan) =>
+        store(id) = t
+        true
+      case None =>
+        false
     }
   }
 
