@@ -57,7 +57,7 @@ sbt run
 ## Future improvements
 - Increase test coverage
 - Data persistence
-- Decouple user interaction from business login in LoanController
+- Decouple user interaction from business logic in LoanController
 - Enhance validation
 - Improving the UI
 - Functional effects libraries
