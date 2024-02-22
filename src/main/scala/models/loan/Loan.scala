@@ -38,7 +38,7 @@ case class Loan(startDate: LocalDate, endDate: LocalDate, amount: BigDecimal,
        |-------------------------
        |${dailyData.mkString("\n")}
        |-------------------------
-       |Total Interest With Margin: $totalInterest
+       |Total Interest With Margin: $totalInterest $currency
  """.stripMargin
   }
 }

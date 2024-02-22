@@ -7,8 +7,6 @@ import java.io.{BufferedReader, InputStreamReader, PrintStream}
 import java.lang.IllegalArgumentException
 import java.time.LocalDate
 import java.util.Currency
-import scala.annotation.tailrec
-import scala.concurrent.Future
 import scala.io.StdIn.readLine
 import scala.util.Try
 
@@ -16,36 +14,31 @@ class LoanController(in: BufferedReader = new BufferedReader(new InputStreamRead
                      out: PrintStream = System.out,
                      loanService: LoanService) {
 
-  @tailrec
-  final def askUserForAction(): Unit = {
+  def askUserForAction(): Unit = {
     out.println("Available commands: ")
     out.println("- 'c', 'calc', or 'calculate': perform a new loan calculation.")
     out.println("- 'v', or 'view': view previous calculations.")
     out.println("- 'x', or 'exit': close the application.")
-    out.print("What do you want to do next? ")
+    out.println("What do you want to do next? ")
 
-    val input = in.readLine().toLowerCase().trim
-
-    input match {
+    LazyList.continually(in.readLine().toLowerCase().trim).foreach {
       case "c" | "calc" | "calculate" => handleNewLoan()
       case "v" | "view" => handleView()
       case "x" | "exit" => System.exit(0)
-      case _ =>
-        out.println("Unsupported action. Please try again.")
-        askUserForAction()
+      case _ => errorHandler(IllegalArgumentException("Unsupported action."))
     }
   }
 
+
   private final def handleNewLoan(): Unit = {
-    val maybeLoan = getLoanDetailsFromUser
-    maybeLoan match {
+    getLoanDetailsFromUser match {
       case Right(loan) =>
-        loan.toString
         loanService.add(loan)
+        out.println("Loan successfully saved.")
+        out.println(loan)
         askUserForAction()
       case Left(ex) =>
-        println(ex.getMessage)
-        askUserForAction()
+        errorHandler(ex)
     }
   }
 
@@ -64,11 +57,11 @@ class LoanController(in: BufferedReader = new BufferedReader(new InputStreamRead
   }
 
   private final def getStartDate: Either[Throwable, LocalDate] = {
-    getUserInput("Please enter the loan start date (format: yyyy-mm-dd): ", "Invalid start date format. Please try again.", str => Try(LocalDate.parse(str)).toEither)
+    getUserInput("Please enter the loan start date (format: yyyy-mm-dd): ", str => Try(LocalDate.parse(str)).toEither)
   }
 
   private final def getEndDate(startDate: LocalDate): Either[Throwable, LocalDate] = {
-    val userInput = getUserInput("Please enter the loan end date (format: yyyy-mm-dd): ", "Invalid end date format. Please try again.", str => Try(LocalDate.parse(str)).toEither)
+    val userInput = getUserInput("Please enter the loan end date (format: yyyy-mm-dd): ", str => Try(LocalDate.parse(str)).toEither)
     userInput match {
       case Right(endDate) if endDate.isAfter(startDate) => Right(endDate)
       case _ => Left(new IllegalArgumentException("End date must be after the start date."))
@@ -76,55 +69,60 @@ class LoanController(in: BufferedReader = new BufferedReader(new InputStreamRead
   }
 
   private final def getAmount: Either[Throwable, BigDecimal] = {
-    getUserInput("Loan amount: ", "Invalid amount. Please try again.", str => Try(BigDecimal(str)).toEither)
+    getUserInput("Loan amount: ", str => Try(BigDecimal(str)).toEither)
   }
 
   private final def getCurrency: Either[Throwable, Currency] = {
-    getUserInput("Currency: ", "Invalid currency code. Please try again.", str => Try(Currency.getInstance(str.toUpperCase)).toEither)
+    getUserInput("Currency code: ", str => Try(Currency.getInstance(str.toUpperCase)).toEither)
   }
 
   private final def getBaseInterestRate: Either[Throwable, BigDecimal] = {
-    getUserInput("Base Interest Rate: ", "Invalid base interest amount. Please enter a valid number.", str => Try(BigDecimal(str)).toEither)
+    getUserInput("Base interest rate: ", str => Try(BigDecimal(str)).toEither)
   }
 
   private final def getMargin: Either[Throwable, BigDecimal] = {
-    getUserInput("Margin: ", "Invalid margin. Please enter a valid number.", str => Try(BigDecimal(str)).toEither)
+    getUserInput("Margin: ", str => Try(BigDecimal(str)).toEither)
   }
 
-  private def getUserInput[T](prompt: String, errorMsg: String, validateFn: String => Either[Throwable, T]): Either[Throwable, T] = {
-    out.print(prompt)
-    val input = in.readLine().trim
-
-    validateFn(input) match {
-      case result@Right(_) => result
-      case Left(_) => Left(IllegalArgumentException(errorMsg))
+  private def getUserInput[T](prompt: String, validateFn: String => Either[Throwable, T]): Either[Throwable, T] = {
+    val inputLoop = LazyList.continually {
+      out.println(prompt)
+      val input = in.readLine().trim
+      validateFn(input)
     }
+    inputLoop.dropWhile(_.isLeft).head
   }
 
   private def handleView(): Unit = {
     loanService.getAllLoans match {
       case Nil =>
-        println("No previous calculations available.")
+        out.println("No previous calculations available.")
         askUserForAction()
       case loans =>
-        loans.foreach(loan => println(loanService.loanToString(loan._1, loan._2)))
-        println("Press 'e' to edit a previous loan, or 'b' to go back.")
-
-        in.readLine().toLowerCase().trim match {
+        loans.foreach(loan => out.println(loanService.loanToString(loan._1, loan._2)))
+        out.println("Press 'e' to edit a previous loan, or 'b' to go back.")
+        LazyList.continually(in.readLine().toLowerCase().trim).foreach {
           case "b" => askUserForAction()
           case "e" => editLoan()
-          case _ => println("Unsupported action. Please try again.")
+          case _ => errorHandler(IllegalArgumentException("Unsupported action."))
         }
     }
   }
 
   private def editLoan(): Unit = {
-    getUserInput("Enter the loan ID you want to edit: ", "Invalid selection. Please enter a valid ID.", str => Try(str.toInt).toEither) match {
+    getUserInput("Enter the loan ID you want to edit: ", str => Try(str.toInt).toEither) match {
       case Right(id) => getLoanDetailsFromUser match {
-        case Right(editedLoan) if loanService.edit(id, editedLoan) => askUserForAction()
-        case _ => println("Something went wrong.")
+        case Right(editedLoan) if loanService.edit(id, editedLoan) =>
+          out.println("Loan updated.")
+          askUserForAction()
+        case Left(ex) => errorHandler(ex)
       }
-      case _ => println("Invalid ID.")
+      case _ => errorHandler(IllegalArgumentException("Invalid ID."))
     }
+  }
+
+  private def errorHandler(ex: Throwable): Unit = {
+    out.println(ex.getMessage)
+    askUserForAction()
   }
 }

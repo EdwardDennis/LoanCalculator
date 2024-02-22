@@ -34,25 +34,7 @@ class LoanControllerSpec extends AnyWordSpec with BeforeAndAfterEach with Mockit
 
   val startDate: LocalDate = LocalDate.parse("2022-12-01")
   val endDate: LocalDate = LocalDate.parse("2023-12-01")
-
-  //  "askUserForAction" should {
-  //    "display available commands to the user and handle new loan for valid commands" in {
-  //      val validCommands = List("c", "calc", "calculate")
-  //
-  //      for (command <- validCommands) {
-  //        when(printStream.println(any[String])).thenAnswer(_ => ())
-  //        when(bufferedReader.readLine()).thenReturn(command, "2022-12-01", "2023-12-01", "2000", "USD", "3.5", "1.0")
-  //
-  //        loanController.askUserForAction()
-  //
-  //        verify(printStream).println("Available commands: ")
-  //        verify(printStream).println("- 'c', 'calc', or 'calculate': perform a new loan calculation.")
-  //        verify(bufferedReader, times(7)).readLine()
-  //        reset(printStream, bufferedReader)
-  //      }
-  //    }
-  //  }
-
+  
   "getStartDate" should {
     "process valid date input" in {
       when(bufferedReader.readLine()).thenReturn(startDate.toString)
@@ -60,14 +42,21 @@ class LoanControllerSpec extends AnyWordSpec with BeforeAndAfterEach with Mockit
       val result = loanController invokePrivate getStartDate()
 
       assert(result.isRight)
-      assert(result == Right(LocalDate.of(2022, 12, 1)))
+      assert(result.equals(Right(startDate)))
+
+      verify(printStream, times(1)).println("Please enter the loan start date (format: yyyy-mm-dd): ")
+      verify(bufferedReader, times(1)).readLine()
     }
+
     "not process invalid date format" in {
       when(bufferedReader.readLine())
         .thenReturn("notadate")
+        .thenReturn("2023-12-01")
 
       val result = loanController invokePrivate getStartDate()
-      assert(result.isLeft)
+
+      verify(printStream, times(2)).println("Please enter the loan start date (format: yyyy-mm-dd): ")
+      verify(bufferedReader, times(2)).readLine()
     }
   }
 
@@ -79,6 +68,9 @@ class LoanControllerSpec extends AnyWordSpec with BeforeAndAfterEach with Mockit
 
       assert(result.isRight)
       assert(result.equals(Right(endDate)))
+
+      verify(printStream, times(1)).println("Please enter the loan end date (format: yyyy-mm-dd): ")
+      verify(bufferedReader, times(1)).readLine()
     }
 
     "not process invalid date format" in {
@@ -88,7 +80,8 @@ class LoanControllerSpec extends AnyWordSpec with BeforeAndAfterEach with Mockit
 
       val result = loanController invokePrivate getEndDate(startDate)
 
-      assert(result.isLeft)
+      verify(printStream, times(2)).println("Please enter the loan end date (format: yyyy-mm-dd): ")
+      verify(bufferedReader, times(2)).readLine()
     }
 
     "not process date earlier than start date" in {
@@ -99,6 +92,8 @@ class LoanControllerSpec extends AnyWordSpec with BeforeAndAfterEach with Mockit
       val result = loanController invokePrivate getEndDate(startDate)
 
       assert(result.isLeft)
+      verify(printStream, times(1)).println("Please enter the loan end date (format: yyyy-mm-dd): ")
+      verify(bufferedReader, times(1)).readLine()
     }
   }
 
@@ -110,6 +105,9 @@ class LoanControllerSpec extends AnyWordSpec with BeforeAndAfterEach with Mockit
 
       assert(result.isRight)
       assert(result.equals(Right(BigDecimal("1000.50"))))
+
+      verify(printStream, times(1)).println("Loan amount: ")
+      verify(bufferedReader, times(1)).readLine()
     }
     "not process invalid input" in {
       when(bufferedReader.readLine())
@@ -118,7 +116,8 @@ class LoanControllerSpec extends AnyWordSpec with BeforeAndAfterEach with Mockit
 
       val result = loanController invokePrivate getAmount()
 
-      assert(result.isLeft)
+      verify(printStream, times(2)).println("Loan amount: ")
+      verify(bufferedReader, times(2)).readLine()
     }
   }
 
@@ -129,19 +128,18 @@ class LoanControllerSpec extends AnyWordSpec with BeforeAndAfterEach with Mockit
       val result = loanController invokePrivate getCurrency()
 
       assert(result.isRight)
-      result match {
-        case Right(currencyValue) => assert(currencyValue.getCurrencyCode == "USD")
-        case _ => fail("Impossible scenario")
-      }
+      verify(printStream, times(1)).println("Currency code: ")
+      verify(bufferedReader, times(1)).readLine()
     }
-    "not process invalid currency code" in {
+    "keep asking until a valid currency code is given" in {
       when(bufferedReader.readLine())
         .thenReturn("XYZ")
         .thenReturn("USD")
 
       val result = loanController invokePrivate getCurrency()
 
-      assert(result.isLeft)
+      verify(printStream, times(2)).println("Currency code: ")
+      verify(bufferedReader, times(2)).readLine()
     }
   }
 
@@ -153,15 +151,19 @@ class LoanControllerSpec extends AnyWordSpec with BeforeAndAfterEach with Mockit
 
       assert(result.isRight)
       assert(result.equals(Right(BigDecimal("3.5"))))
+
+      verify(printStream, times(1)).println("Base interest rate: ")
+      verify(bufferedReader, times(1)).readLine()
     }
-    "not process invalid input" in {
+    "keep asking until a valid decimal is given" in {
       when(bufferedReader.readLine())
         .thenReturn("notanumber")
         .thenReturn("3.5")
 
       val result = loanController invokePrivate getBaseInterestRate()
 
-      assert(result.isLeft)
+      verify(printStream, times(2)).println("Base interest rate: ")
+      verify(bufferedReader, times(2)).readLine()
     }
   }
 
@@ -171,17 +173,20 @@ class LoanControllerSpec extends AnyWordSpec with BeforeAndAfterEach with Mockit
 
       val result = loanController invokePrivate getMargin()
 
+      verify(printStream, times(1)).println("Margin: ")
+      verify(bufferedReader, times(1)).readLine()
       assert(result.isRight)
       assert(result.equals(Right(BigDecimal("1.0"))))
     }
-    "not process invalid input" in {
+    "keep asking until a valid decimal is given" in {
       when(bufferedReader.readLine())
         .thenReturn("notanumber")
         .thenReturn("1.0")
 
       val result = loanController invokePrivate getMargin()
 
-      assert(result.isLeft)
+      verify(printStream, times(2)).println("Margin: ")
+      verify(bufferedReader, times(2)).readLine()
     }
   }
 }
