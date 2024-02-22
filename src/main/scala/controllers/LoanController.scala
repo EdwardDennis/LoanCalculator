@@ -112,9 +112,11 @@ class LoanController(in: BufferedReader = new BufferedReader(new InputStreamRead
   private def editLoan(): Unit = {
     getUserInput("Enter the loan ID you want to edit: ", str => Try(str.toInt).toEither) match {
       case Right(id) => getLoanDetailsFromUser match {
-        case Right(editedLoan) if loanService.edit(id, editedLoan) =>
+        case Right(editedLoan: Loan) if loanService.edit(id, editedLoan) =>
           out.println("Loan updated.")
           askUserForAction()
+        case Right(_) =>
+          errorHandler(new Exception("Failed to update loan."))
         case Left(ex) => errorHandler(ex)
       }
       case _ => errorHandler(IllegalArgumentException("Invalid ID."))

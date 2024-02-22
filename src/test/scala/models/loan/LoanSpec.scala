@@ -10,7 +10,7 @@ class LoanSpec extends AnyWordSpec with Matchers {
 
   val startDate: LocalDate = LocalDate.parse("2022-01-01")
   val endDate: LocalDate = LocalDate.parse("2022-01-31")
-  val loan = Loan(startDate, endDate, BigDecimal(1000), "USD", BigDecimal(5), BigDecimal(2))
+  val loan: Loan = Loan(startDate, endDate, BigDecimal(1000), "USD", BigDecimal(5), BigDecimal(2))
 
   "A Loan" should {
     "calculate total interest rate correctly" in {
